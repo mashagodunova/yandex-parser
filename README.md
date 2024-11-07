@@ -20,3 +20,4 @@ driver = webdriver.Chrome(executable_path='YOUR_PATH_CHROMEDRIVER', chrome_optio
 [Папка с примерами](https://github.com/FalseHuman/yandex_parser_to_excel/tree/master/sample_files)
 
 Связаться со мной в [Telegram](https://t.me/FalseHuman)
+# yandex-parser

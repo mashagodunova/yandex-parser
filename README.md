@@ -1,0 +1,1 @@
+This is a repository for a Yandex Market parser that allows bypassing CAPTCHA and automatic blocking on the website. You can use this code with a bot in Telegram. To do this, you need to create a bot and modify the bot.py file.

@@ -5,54 +5,21 @@ from io import BytesIO
 import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from config import token
+from selenium.webdriver.common.by import By
+token = '5643122315:AAHTc3MOGgFiwXznLctdNPVRZ6QDO_iDSSs'
 
 
 def create_driver():
     options = Options()
     options.add_argument(
-        f"user-data-dir=Market_Parser")
-    options.add_argument(
-        "user-agent=Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36")
-    options.add_argument("--headless")
+        f"user-data-dir=Profile_14")
+    options.add_argument('--user-agent="Mozilla/5.0 (Windows Phone 10.0; Android 4.2.1; Microsoft; Lumia 640 XL LTE) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Mobile Safari/537.36 Edge/12.10166"')
+    #options.add_argument("--headless")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--v=99")
     options.add_argument("--no-sandbox")
-    driver = webdriver.Chrome(chrome_options=options)
+    driver = uc.Chrome(options=options)
     return driver
-
-def min_price(prices):
-    min_price = []
-    for price in prices:
-        if '₽' in price:
-            price = price.replace('₽', '')
-            price = price.split()
-            price = ''.join(price)
-            min_price.append(int(price))
-    return min(min_price)
-
-def original_photo_size(link):
-    # Замена значений кропа на orig
-    if link != 'https://avatars.mds.yandex.net/get-yapic/0/0-0/islands-retina-50':
-        link = link.split('/')
-        link[-1] = link[-1].replace(link[-1], 'orig')
-        # Формирование новой ссылки
-        new_link = ''
-        for index_elem in link:
-            new_link += index_elem + '/'
-        return new_link
-    else:
-        return link
-
-
-def clear_text(text):
-    garbages = ['Задать вопрос о товаре', 'Подробнее', 'Все товары',
-                'Перед покупкой уточняйте характеристики и комплектацию у продавца.', 'Пожаловаться на товар', 'Внешний вид товаров и/или упаковки может быть изменён изготовителем и отличаться от изображенных на Яндекс.Маркете.', 'Есть противопоказания, посоветуйтесь с врачом.']
-
-    for garbage in garbages:
-        if garbage in text:
-            text = text.replace(garbage, '')
-    return text
 
 
 def feedback_yandex_market(link):
@@ -69,7 +36,7 @@ def feedback_yandex_market(link):
     }
 
     try:
-        feedbacks = driver.find_elements_by_class_name('_13uSY')
+        feedbacks = driver.find_elements(By.XPATH,"//div[@class='_13uSY']")
         for feedback in feedbacks:
             feedback_dict = {}
             try:
@@ -108,54 +75,6 @@ def feedback_yandex_market(link):
         return f'error'
 
 
-def questions_yandex_market(link):
-    driver = create_driver()
-    driver.get(link)
-    time.sleep(10)
-    questions_arr = []
-    try:
-        quetstions = driver.find_elements_by_class_name('_17NwA')
-        for queststion in quetstions:
-            try:
-                image_author = queststion.find_element_by_class_name(
-                    '_3ZjdE').get_attribute('src')
-                image_author = original_photo_size(image_author)
-            except:
-                image_author = 'Нет аватарки'
-            queststion = queststion.text.split('Ответить')
-            queststion_dict = {}
-            for comment in range(len(queststion)):
-                if comment == 0:
-                    # print('Вопрос')
-                    comment_split = queststion[0].split('\n')
-                    queststion_dict['comment'] = {
-                        'user': comment_split[0], 'data': comment_split[1], 'text': comment_split[2]}
-                    #print(comment_split[0], comment_split[1], comment_split[2])
-                else:
-                    # print("Ответ")
-                    answer_split = queststion[1].split('\n')
-                    #print(answer_split)
-
-                    if len(answer_split) > 2:
-                        #print(answer_split)
-                        try:
-                            queststion_dict['answer'] = {
-                                'user': answer_split[3], 'data': answer_split[4], 'text': answer_split[5], 'image': image_author}
-                            #print(answer_split[2], answer_split[3], answer_split[4], image_author)
-                        except:
-                            answer_split = "Нет данных"
-                            queststion_dict['answer'] = {
-                                'user': answer_split, 'data': answer_split, 'text': answer_split, 'image': answer_split}
-            questions_arr.append(queststion_dict)
-            # print(questions_arr)
-        driver.quit()
-        return questions_arr
-    except Exception as e:
-        print(f'Ошибка парсинга {e}')
-        driver.quit()
-        return f'error'
-
-
 def parser_yandex_market(link):
     driver = create_driver()
     driver.get(link)
@@ -164,129 +83,19 @@ def parser_yandex_market(link):
     try:
         print(
             'Название, цена, рейтинг, характеристики рядом с заголовком, коротко о товаре')
-        name = driver.find_element_by_class_name('_2OAAC').text
+        
+        name = driver.find_element(By.XPATH,"//h1[@class='_3TVFy _2SUA6 jM85b _13aK2 _1A5yJ']").text
         try:
-            price = (driver.find_element_by_class_name('KnVez'))
-            price = (price.text).split('\n')
-            pars_price = min_price(price)
-        except:
-            pars_price = 'Отсутствует цена или товара нет в продаже'
-        try:
-            rating = driver.find_element_by_class_name('_2v4E8').text
+            rating = driver.find_element(By.XPATH,"//span[@class='_24dJu']").text
         except:
             rating = 'Нет данных'
-        try:
-            characteristic_h1 = driver.find_element_by_class_name(
-                '_2o3uY').text  # TODO разбраться что за хрень!
-        except:
-            characteristic_h1 = 'Нет данных'
-        try:
-            user_change = driver.find_element_by_class_name(
-                '_2lqOc').text
-        except:
-            user_change = 'Нет данных'
-        try:
-            characteristic_low = driver.find_element_by_class_name(
-                'Ksay3').text
-        except:
-            characteristic_low = driver.find_element_by_class_name(
-                '_2ZGXi')
-            characteristic_low = characteristic_low.find_element_by_class_name(
-                'cia-cs').text
-        dict_market['name'] = name
-        dict_market['price'] = pars_price
-        dict_market['rating'] = rating
-        dict_market['user_change'] = user_change
-        dict_market['characteristic_h1'] = characteristic_h1
-        dict_market['characteristic_low'] = characteristic_low
-        print('Картинки')
-        try:
-            images_button = driver.find_element_by_class_name(
-                '_19EZn').click()
-        except:
-            images_button = driver.find_element_by_class_name(
-                '_2ljqQ').click()
-        else:
-            pass
-        time.sleep(2)
-        div_images = driver.find_element_by_class_name('_2WKLY')
-        images = div_images.find_elements_by_tag_name('img')
-        arr_images = []
-        for image in images:
-            image = original_photo_size(image.get_attribute('src'))
-            if image not in arr_images:
-                arr_images.append(image)
-        # Закрытие картинок
-        driver.find_element_by_class_name('_2TKD4').click()
-        # print(arr_images)
-        dict_market['images'] = arr_images
-        print('-------------')
-
-        # Характеристика товара
-        print('Характеристика')
-        spec_button = driver.find_element_by_class_name(
-            '_3mNWJ').click()
-        time.sleep(10)
-        characteristic_product = driver.find_element_by_id(
-            'product-specs').text
-        #characteristic_product = clear_text(characteristic_product)
-        # print la3zd
-        try:
-            info_characteristic = characteristic_product.find_element_by_class_name('_1RgU1').text # Описание
-            #print(info_characteristic)
-            '''h2_table = characteristic_product.find_element_by_class_name('Y7zwR').text
-            #print(h2_table)
-            divs_table = characteristic_product.find_elements_by_class_name('la3zd')
-            div_table_string = ''
-            for div_table in divs_table:
-                #h3_table = div_table.find_element_by_class_name('_1yUJ7').text
-                #print(h3_table)
-                text = ''
-                for span in div_table.find_elements_by_class_name('sZB0N'):
-                    new_span = span.text.replace('\n', ' ') + '\n'
-                    text += new_span
-                    """ print(span.text.replace('\n', ' '))
-                    print('-------------') """
-
-                div_table_string += h3_table + '\n' + text'''
-            characteristic_product = info_characteristic
-            #print(characteristic_product)
-        except:
-            characteristic_product = clear_text(characteristic_product)
-        dict_market['characteristic_product'] = characteristic_product
-        # print(characteristic_product)
-        print('-------------')
-        # Вопросы к товару _23Bz1
-        button = driver.find_element_by_class_name('_1SqIf')
-        link_button = button.get_attribute('href')
-        # print(number)
-        button.click()
-        time.sleep(10)
-        queststion_page = driver.find_elements_by_class_name('_2prNU')
-        if len(queststion_page) == 0:
-            print(link_button)
-            dict_market['questions'] = [link_button]
-        else:
-            queststion_link = []
-            for i in range(len(queststion_page)):
-                try:
-                    print(queststion_page[i].get_attribute('href'))
-                    if queststion_page[i].get_attribute('href') not in queststion_link:
-                        queststion_link.append(queststion_page[i].get_attribute('href'))
-                except:
-                    pass
-            dict_market['questions'] = queststion_link
-        # Отзывы к товару сбор ссылок
-        feed_bck_btn = driver.find_element_by_class_name('_2J5l3')
+       
+        feed_bck_btn = driver.find_element(By.XPATH,"//a[@class=''EQlfk COmSo'']")
         link_feed_bck_btn = feed_bck_btn.get_attribute('href')
         feed_bck_btn.click()
         time.sleep(10)
-        try:
-            dict_market['text_feedback'] = driver.find_element_by_class_name(
-                '_1yQSc').text
-        except:
-            dict_market['text_feedback'] = 'Нет отзыва от Яндекса'
-        feedback_page = driver.find_elements_by_class_name('_2prNU')
+
+        feedback_page = driver.find_element(By.XPATH,"//a[@class=''EQlfk COmSo'']")
         if len(feedback_page) == 0:
             print(link_feed_bck_btn)
             dict_market['feedback'] = [link_feed_bck_btn]
@@ -305,15 +114,15 @@ def parser_yandex_market(link):
     except Exception as e:
         print(f'Ошибка парсинга {e}')
         driver.quit()
-        return 'error'
+        return 'error',e
 
 
-def start_parser(chat_id, link):
-    quetstion_func = parser_yandex_market(link)
+def start_parser(link):
+    print('We started')
+    quetstion_func,e = parser_yandex_market(link)
+    print('We started')
     if quetstion_func == 'error':
-        text = 'Ошибка при парсинге, повторите попытку'
-        requests.post(
-            f'https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={text}')
+        print('Ошибка при парсинге, повторите попытку',e)
     else:
         wb = openpyxl.Workbook()
         # Основная информация
@@ -335,18 +144,6 @@ def start_parser(chat_id, link):
             photo_count +=1 
             sheet_main_page.append([photo_count, image])
         # Страница вопросов
-        question_page = wb.create_sheet(
-            title='Вопросы', index=0)
-        sheet_question_page = wb['Вопросы']
-        field_name_question_page = ['Автор вопроса', 'Дата комментария', 'Текст', 'Автор ответа',
-                                    'Дата ответа', 'Текст', 'Аватарка автора ответа']
-        sheet_question_page.append(field_name_question_page)
-        for i in quetstion_func['questions']:
-            if i != 'error':
-                arr_questions = questions_yandex_market(i)
-                for index in arr_questions:
-                    sheet_question_page.append([index['comment']['user'], index['comment']['data'], index['comment']['text'],
-                                                index['answer']['user'], index['answer']['data'], index['answer']['text'], index['answer']['image']])
         feedback_page = wb.create_sheet(
             title='Отзывы', index=0)
         sheet_feedbck_page = wb['Отзывы']
@@ -364,8 +161,8 @@ def start_parser(chat_id, link):
         if '/' in excelfile:
             excelfile = excelfile.replace('/', ' ')
         wb.save(excelfile)
-        status = requests.post(
-            f'https://api.telegram.org/bot{token}/sendDocument?chat_id={chat_id}', files={'document': open(excelfile, 'rb')})
-        print(status)
-        os.remove(excelfile)
-#start_parser('741541899', 'https://market.yandex.ru/product--nabor-iz-10-par-noskov-moscowsocksclub-m20-miks-iskusstvo-razmer-27-41-43/1439308463?glfilter=14474426%3AMjcgKDQxLTQzKQ_101447518663&glfilter=14871214%3A15098577_101447518663&cpc=zHewvSNgIjPtJC9iD60JL3m43OcnhUqQ-g6C4kDb05rWnvIKBybbR6unOSuLlBsL9g15fnalFtreycesyu-TgSxkTsBYWCoNIxS5QvFMzLDWg2VG_56D7oYSPcsjO6rlKiAnV7kSCqmriKKOOtdM0Vd8TVPSkApivEnqem6eGihq0VwesfusPWNxg1F5Tq3i&sku=101447518663&offerid=7JFFcigWlvMzkapCVGazig&cpa=1')
+        # status = requests.post(
+        #     f'https://api.telegram.org/bot{token}/sendDocument?chat_id={chat_id}', files={'document': open(excelfile, 'rb')})
+        # print(status)
+        # os.remove(excelfile)
+start_parser('https://market.yandex.ru/product--nabor-iz-10-par-noskov-moscowsocksclub-m20-miks-iskusstvo-razmer-27-41-43/1439308463?glfilter=14474426%3AMjcgKDQxLTQzKQ_101447518663&glfilter=14871214%3A15098577_101447518663&cpc=zHewvSNgIjPtJC9iD60JL3m43OcnhUqQ-g6C4kDb05rWnvIKBybbR6unOSuLlBsL9g15fnalFtreycesyu-TgSxkTsBYWCoNIxS5QvFMzLDWg2VG_56D7oYSPcsjO6rlKiAnV7kSCqmriKKOOtdM0Vd8TVPSkApivEnqem6eGihq0VwesfusPWNxg1F5Tq3i&sku=101447518663&offerid=7JFFcigWlvMzkapCVGazig&cpa=1')
